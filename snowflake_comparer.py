@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 """
-Created on Sat Jul 23 11:29:23 2022
 @author: Fouad
 """
 
@@ -200,15 +199,19 @@ withPerimeter = np.insert(sfOfSamePerimeter, 0, uniquePerimetersArray[:,0], axis
 counter = 0
 for ind, val in enumerate(snowflakesByPerimeter):
     
-    # referenceSF = val[0]
-    # while referenceSF == val[ind+1]:
-    #     pass
-
-
-    # need to loop for each cluster to compare each snowflake with the first one in its cluster
-    # if val[ind] != val[ind-1]:
-    print('Change @ sf_index: ', val[1])
+    #looping for each cluster to compare snowflakes with the 1st one in its cluster
+    referenceP   = val[0]  #perimeter
+    referenceIdx = val[1]  #index
+    referenceSF  = val[2:] #snowflake legs
     
+    if (ind != N_FLAKE-1 ): #if we are NOT on the last snowflake
+        if (referenceP != snowflakesByPerimeter[ind+1][0]): #if the reference perimeter changed
+            referenceP  = snowflakesByPerimeter[ind+1][0] #change the ref. perimeter
+            
+        # # to see where the snowflake changed perimeter
+        # if (snowflakesByPerimeter[ind][0] != snowflakesByPerimeter[ind-1][0] ):
+        #     print('P change @ idx: ', val[1])
+
     a1 = snowflakesByPerimeter[ind,   2:] #the repeated array
     a2 = snowflakesByPerimeter[ind+1, 2:] #the reference array
     isEqual = array_processor(a1, a2)
