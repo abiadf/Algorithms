@@ -197,44 +197,41 @@ for i, val in enumerate(changedPerimeterIndices):
 sfOfSamePerimeter = INV*np.ones( [different_perimeters, mostCommonPerimeterFreq] ) #array of shape [unique perimeters, freq of most common perimeter], we are overestimating by a lot
 withPerimeter = np.insert(sfOfSamePerimeter, 0, uniquePerimetersArray[:,0], axis=1)
 counter = 0
-for ind, val in enumerate(snowflakesByPerimeter):
+
+
+# setting the 1st entry as ref values
+referenceP   = snowflakesByPerimeter[0][0]  #perimeter
+referenceIdx = snowflakesByPerimeter[0][1]  #index
+referenceSF  = snowflakesByPerimeter[0][2:] #snowflake legs
+
+for ind, val in enumerate(snowflakesByPerimeter[1:]): #start from 2nd value because 1st was used as ref in above lines
     
-    #looping for each cluster to compare snowflakes with the 1st one in its cluster
-    referenceP   = val[0]  #perimeter
-    referenceIdx = val[1]  #index
-    referenceSF  = val[2:] #snowflake legs
-    
+    # Compare snowflakes with the 1st one in its cluster - WITHOUT LOOPING
     if (ind != N_FLAKE-1 ): #if we are NOT on the last snowflake
-        if (referenceP != snowflakesByPerimeter[ind+1][0]): #if the reference perimeter changed, then the cluster changed (since cluster is based on the perimeter)
-            referenceP  = snowflakesByPerimeter[ind+1][0] #change the ref. perimeter
-            referenceIdx= snowflakesByPerimeter[ind+1][1] #change the ref. perimeter
-            referenceSF = snowflakesByPerimeter[ind+1][2:] #change the ref. perimeter
-            
-        # # to see where the snowflake changed perimeter
+        if (referenceP != snowflakesByPerimeter[ind][0]): #if the reference perimeter changed, then the cluster changed (since cluster is based on the perimeter)
+            referenceP  = snowflakesByPerimeter[ind][0]   #change ref. perimeter
+            referenceIdx= snowflakesByPerimeter[ind][1]   #change ref. index
+            referenceSF = snowflakesByPerimeter[ind][2:]  #change ref. snowflake
+            continue #if the ref changed, SKIP to next loop (otherwise will compare ref with itself)
+
+        # # To see where the snowflake changed perimeter
         # if (snowflakesByPerimeter[ind][0] != snowflakesByPerimeter[ind-1][0] ):
         #     print('P change @ idx: ', val[1])
 
-    a1 = snowflakesByPerimeter[ind,   2:] #the repeated array
-    a2 = snowflakesByPerimeter[ind+1, 2:] #the reference array
-    isEqual = array_processor(a1, a2)
+    a_ref  = referenceSF #the repeated array
+    a_2    = snowflakesByPerimeter[ind, 2:] #the reference array
+    isEqual= array_processor(a_ref, a_2)
 
     if isEqual:
-        # print(isEqual)
-      
         desiredPerimeter = np.where(withPerimeter[:,0] == snowflakesByPerimeter[ind,0]) #for what perimeter value is this the case?
         desiredPerimeterValue = desiredPerimeter[0][0] #keeps the int value
         
         # following line NOT working :(
         withPerimeter[desiredPerimeterValue][(withPerimeter[desiredPerimeterValue] == -1).nonzero()[0][:1]] = snowflakesByPerimeter[ind,1]
         # https://stackoverflow.com/questions/35016737/how-to-replace-only-the-first-n-elements-in-a-numpy-array-that-are-larger-than-a
-    # else:
-    #     print('not equal')    
 
-    if ind+1 == len(snowflakesByPerimeter)-1: #if index reaches penultimate row
-        break
-
-#     if changedPerimeterIndices[ind] == 1:
-#         print(changedPerimeterIndices[ind], val[1])
+    # if ind+1 == len(snowflakesByPerimeter)-1: #if index reaches penultimate row
+    #     break
 
 
 # Remove rows from 'withPerimeter' without similar snowflakes (=validEntries)
@@ -249,7 +246,7 @@ for i, val in enumerate(withPerimeter):
 numberOfEntries = np.empty( [len(validEntries), 1] ) # the width is 1 cause for each array, we just need the number of similar snowflakes
 for i,val in enumerate(validEntries):
     numberOfEntries[i] = np.where(validEntries[i]==INV)[0][0] -1  # finds first instance of the similarity array NOT being similar. Removes 1 because we want to remove the perimeter and keep valid entries 
-highestNumber = int( np.max(numberOfEntries) ) #how many identical snowflakes (in the cluster with the highest nuber of identical snowflakes)
+highestNumber = int( np.max(numberOfEntries) ) #how many identical snowflakes (in the cluster with the highest number of identical snowflakes)
 
 
 # Keep equal snowflakes
