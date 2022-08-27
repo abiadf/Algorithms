@@ -237,7 +237,7 @@ invalidEntriesCrit = INV*np.shape(withPerimeter)[1] + 1
 validEntries = np.zeros( [0, np.shape(withPerimeter)[1] ] ) #want it of fixed width, but unknown length (so set to 0)
 for i, val in enumerate(withPerimeter):
     if np.sum(withPerimeter[i,1:]) > invalidEntriesCrit: #invalid entries are -1, so the sum of the row will be negative
-        validEntries = np.vstack([validEntries, val]) #we have a match
+        validEntries = np.vstack([validEntries, val]) #we have a match, add values vertically into array
 
 
 # Find which snowflake shape has the most members
