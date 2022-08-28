@@ -6,17 +6,18 @@
 import numpy as np
 from collections import Counter
 
+
 # %%
 # CONSTANTS
 # =========
 
-N_FLAKE = int(1e3) #number of snowflakes to compare
+N_FLAKE = int(1e4) #number of snowflakes to compare
 
 L_FLAKE = 6 #how many legs in a snowflake
 W_FLAKE = 1 #how may snowflakes at a time (= per row)
 
 MIN_LENGTH = 1 #minimum leg length
-MAX_LENGTH = 6 #maximum leg length
+MAX_LENGTH = 8 #maximum leg length
 
 INV = -1 #number for invalid entries
 
@@ -136,16 +137,17 @@ def array_processor(a1, a2):
 # CODE
 # ====
 
-# Generating N snowflakes of random lengths
-snowflakes_array = np.empty([N_FLAKE, L_FLAKE]) #empty [N, 6] array
-for i in range(N_FLAKE):
-    snowflakes_array[i,:] = np.random.randint(MIN_LENGTH, MAX_LENGTH+1, S_SNOWFLAKE) #generates snowflake leg lengths
+# Make all numbers appear as INT and not FLOAT
+np.set_printoptions(suppress = True)
 
+# Generating N snowflakes of random lengths
+snowflakes = np.empty([N_FLAKE, L_FLAKE]) #empty [N, 6] array
+for i in range(N_FLAKE):
+    snowflakes[i,:] = np.random.randint(MIN_LENGTH, MAX_LENGTH+1, S_SNOWFLAKE) #generates snowflake leg lengths
 
 # Getting frequency of snowflake perimeters
-perimeter_list = np.sum(snowflakes_array, axis=1) #sum legs of each snowflake
+perimeter_list = np.sum(snowflakes, axis=1) #sum legs of each snowflake
 perimeter_freq = Counter(perimeter_list).most_common() #(most frequent, frequency) tuple
-
 
 # Make array to store the indices of different perimeters
 different_perimeters   = len(perimeter_freq) #how many unique perimeters are there
@@ -158,98 +160,89 @@ for i in range(len(perimeter_freq)):
     for j in index_locator:
         index_perimeter[i, 0:len(j)] = j
 
-
 # Cluster same-perimeter flakes together
 # Table shape: [perimeter_list, real_idx, - - - - - - ]
-snowflakesByPerimeter = np.zeros( [N_FLAKE, L_FLAKE+2] ) #table showing different indices of different perimeters. set to -1 to know when the array is over
+sfByPerimeter = np.zeros( [N_FLAKE, L_FLAKE+2] ) #table showing different indices of different perimeters. set to -1 to know when the array is over
 counter = 0
 for idx,val in enumerate(index_perimeter):
     for j in val:
         if j > INV:
-            snowflakesByPerimeter[counter, 0] = perimeter_list[int(j)] #perimeter
-            # snowflakesByPerimeter[counter, 1] = j #index of snowflake
-            snowflakesByPerimeter[counter, 2:L_FLAKE+2] = snowflakes_array[int(j), :] #legs
+            sfByPerimeter[counter, 0] = perimeter_list[int(j)] #perimeter
+            # sfByPerimeter[counter, 1] = j #index of snowflake
+            sfByPerimeter[counter, 2:L_FLAKE+2] = snowflakes[int(j), :] #legs
             counter += 1
-
 
 # Add indices column into array
 perimetersIndexByFreq = index_perimeter[index_perimeter != INV] #removes invalid entries + flattens array
-snowflakesByPerimeter[:, 1] = perimetersIndexByFreq #index of snowflake
-# print(snowflakesByPerimeter)
-
+sfByPerimeter[:, 1] = perimetersIndexByFreq #index of snowflake
 
 # Create array that tells when the perimeter changed
-perimeterDiff = np.diff(snowflakesByPerimeter[:,0] , axis=0) #get change in perimeter
+perimeterDiff = np.diff(sfByPerimeter[:,0] , axis=0) #get change in perimeter
 didPerimeterChange = np.where(perimeterDiff != 0, 1, perimeterDiff) #make change in perimeter binary (0=no change,1=change)
 changedPerimeterIndices = np.insert(didPerimeterChange, 0, 1) #add a 1 in first spot in array to consider first entry (diff function subtracts values from each other, so need to add the first value back)
-
 
 # Create array of unique perimeters, to be used as reference for comparison
 counter = 0
 uniquePerimetersArray = np.zeros( [different_perimeters, L_FLAKE+2] )
 for i, val in enumerate(changedPerimeterIndices):
     if changedPerimeterIndices[i] == 1:
-        uniquePerimetersArray[counter] = snowflakesByPerimeter[i]
+        uniquePerimetersArray[counter] = sfByPerimeter[i]
         counter += 1
-
 
 # Compare snowflakes of same perimeter
 sfOfSamePerimeter = INV*np.ones( [different_perimeters, mostCommonPerimeterFreq] ) #array of shape [unique perimeters, freq of most common perimeter], we are overestimating by a lot
-withPerimeter = np.insert(sfOfSamePerimeter, 0, uniquePerimetersArray[:,0], axis=1)
+sfWithPerimeter = np.insert(sfOfSamePerimeter, 0, uniquePerimetersArray[:,0], axis=1)
 
 # setting the 1st entry as ref values
-referenceP   = snowflakesByPerimeter[0][0]  #perimeter
-referenceIdx = snowflakesByPerimeter[0][1]  #index
-referenceSF  = snowflakesByPerimeter[0][2:] #snowflake legs
+referenceP   = sfByPerimeter[0][0]  #perimeter
+referenceIdx = sfByPerimeter[0][1]  #index
+referenceSF  = sfByPerimeter[0][2:] #snowflake legs
 
-for ind, val in enumerate(snowflakesByPerimeter[1:]): #start from 2nd value because 1st was used as ref in above lines
+for ind, val in enumerate(sfByPerimeter[1:]): #start from 2nd value because 1st was used as ref in above lines
     
     # Compare snowflakes with 1st one in its cluster - WITHOUT LOOPING
     if (ind != N_FLAKE-1 ): #if we are NOT on the last snowflake
-        if (referenceP != snowflakesByPerimeter[ind][0]): #if the reference perimeter changed, then the cluster changed (since cluster is based on the perimeter)
-            referenceP  = snowflakesByPerimeter[ind][0]   #change ref. perimeter
-            referenceIdx= snowflakesByPerimeter[ind][1]   #change ref. index
-            referenceSF = snowflakesByPerimeter[ind][2:]  #change ref. snowflake
+        if (referenceP != sfByPerimeter[ind][0]): #if the reference perimeter changed, then the cluster changed (since cluster is based on the perimeter)
+            referenceP  = sfByPerimeter[ind][0]   #change ref. perimeter
+            referenceIdx= sfByPerimeter[ind][1]   #change ref. index
+            referenceSF = sfByPerimeter[ind][2:]  #change ref. snowflake
             continue #if the ref changed, SKIP to next loop (otherwise will compare ref with itself)
 
-        # # Where the snowflake changed perimeter:
-        # if (snowflakesByPerimeter[ind][0] != snowflakesByPerimeter[ind-1][0] ):
+        # # Find where the snowflake changed perimeter:
+        # if (sfByPerimeter[ind][0] != sfByPerimeter[ind-1][0] ):
         #     print('P change @ idx: ', val[1])
 
-    a_ref  = referenceSF #the repeated array
-    a_2    = snowflakesByPerimeter[ind, 2:] #the reference array
+    a_ref  = referenceSF            # repeated array
+    a_2    = sfByPerimeter[ind, 2:] # the reference array
     isEqual= array_processor(a_ref, a_2)
 
     if isEqual:
-        desiredPerimeter = np.where(withPerimeter[:,0] == snowflakesByPerimeter[ind,0]) #for what perimeter value is this the case?
+        desiredPerimeter = np.where(sfWithPerimeter[:,0] == sfByPerimeter[ind,0]) #for what perimeter value is this the case?
         desiredPerimeterValue = desiredPerimeter[0][0] #keeps the int value
         
-        
-        #still need to add the reference array into the list of answers if there is a match
-        
-        # Following line NOT working :(
-        withPerimeter[desiredPerimeterValue][(withPerimeter[desiredPerimeterValue] == -1).nonzero()[0][:1]] = snowflakesByPerimeter[ind,1]
+        sfWithPerimeter[desiredPerimeterValue][(sfWithPerimeter[desiredPerimeterValue] == INV).nonzero()[0][:1]] = sfByPerimeter[ind,1] # replacing the first elements in array that are = -1
         # https://stackoverflow.com/questions/35016737/how-to-replace-only-the-first-n-elements-in-a-numpy-array-that-are-larger-than-a
-
-
-# Remove rows from 'withPerimeter' without similar snowflakes (=validEntries)
-invalidEntriesCrit = INV*np.shape(withPerimeter)[1] + 1
-validEntries = np.zeros( [0, np.shape(withPerimeter)[1] ] ) #want it of fixed width, but unknown length (so set to 0)
-for i, val in enumerate(withPerimeter):
-    if np.sum(withPerimeter[i,1:]) > invalidEntriesCrit: #invalid entries are -1, so the sum of the row will be negative
+        
+        loc = np.where(sfWithPerimeter[desiredPerimeterValue] == INV)[0][0] #where is the first -1 (so we can replace it with the ref index)?
+        if referenceIdx not in sfWithPerimeter[desiredPerimeterValue]: #if reference index is NOT in SF array, add it
+            sfWithPerimeter[desiredPerimeterValue][loc] = referenceIdx # insert reference index into SF array
+            
+# Remove rows from 'sfWithPerimeter' without similar snowflakes (=validEntries)
+invalidEntriesCrit = INV*np.shape(sfWithPerimeter)[1] + 1
+validEntries = np.zeros( [0, np.shape(sfWithPerimeter)[1] ] ) #want it of fixed width, but unknown length (so set to 0)
+for i, val in enumerate(sfWithPerimeter):
+    if np.sum(sfWithPerimeter[i,1:]) > invalidEntriesCrit: #invalid entries are -1, so the sum of the row will be negative
         validEntries = np.vstack([validEntries, val]) #we have a match, add values vertically into array
-
 
 # Find which snowflake shape has the most members
 numberOfEntries = np.empty( [len(validEntries), 1] ) # the width is 1 cause for each array, we just need the number of similar snowflakes
 for i, val in enumerate(validEntries):
     numberOfEntries[i] = np.where(validEntries[i]==INV)[0][0] -1  # finds first instance of the similarity array NOT being similar. Removes 1 because we want to remove the perimeter and keep valid entries 
-highestNumber = int( np.max(numberOfEntries) ) #how many identical snowflakes (in the cluster with the highest number of identical snowflakes)
 
+highestNumber = int( np.max(numberOfEntries) ) #how many identical snowflakes (in the cluster with the highest number of identical snowflakes)
 
 # Keep equal snowflakes
 cleaned = np.delete(validEntries, np.s_[highestNumber+1:], axis=1) #removes all columns after the last valid one
 EqualSnowflakes = cleaned[:, 1:] #removes 1st column (= perimeter)
 print(EqualSnowflakes) 
-
 
