@@ -1,6 +1,5 @@
-# Python-Personal-Practice
+# Algorithms
 
 
-Python exercises intended to be private.
-
+Python Algorithms
 
