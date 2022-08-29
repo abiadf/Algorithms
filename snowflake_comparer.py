@@ -246,4 +246,3 @@ cleaned = np.delete(validEntries, np.s_[highestNumber+1:], axis=1) #removes all 
 EqualSnowflakes = cleaned[:, 1:] #removes 1st column (= perimeter)
 print(EqualSnowflakes) 
 
-# 3
